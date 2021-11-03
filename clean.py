@@ -8,12 +8,14 @@ import ebooklib
 from ebooklib import epub
 from tqdm import tqdm
 
+from nrclex import NRCLex
+
 
 def add_filenames(df):
 
     df['filename'] = [str(i) + '.epub' for i in df['id']]
 
-    for i in tqdm(range(len(df)), desc="adding filenames"):
+    for i in tqdm(range(len(df)), desc="Adding filenames"):
         filename = df['filename'][i]
 
         if not os.path.isfile(os.getcwd() + '/data/pg/{}'.format(filename)):
@@ -30,7 +32,7 @@ def add_meta(df):
     authors = []
     langs = []
 
-    for i in tqdm(range(len(df)), desc='adding metadata'):
+    for i in tqdm(range(len(df)), desc='Adding metadata'):
         filename = df['filename'][i]
 
         book = epub.read_epub(os.getcwd() + '/data/pg/{}'.format(filename))
@@ -131,7 +133,7 @@ def extract_text_simple(df):
     df['corpus'] = ''
     book = epub.read_epub(os.getcwd() + '/data/pg/' + df['filename'][0])
 
-    for idx in tqdm(range(len(df))):
+    for idx in tqdm(range(len(df)), desc='Extracting text'):
         filename = df['filename'][idx]
         book = epub.read_epub(os.getcwd() + '/data/pg/' + filename)
 
@@ -166,7 +168,91 @@ def extract_text_simple(df):
 
                     res += text
 
-        df['corpus'][idx] = res
+        # df['corpus'][idx] = res
+        df.loc[idx, 'corpus'] = res
+
+    return(df)
+
+
+def add_nrc_simple(df):
+
+    d = {'fear': [],
+         'anger': [],
+         'trust': [],
+         'surprise': [],
+         'positive': [],
+         'negative': [],
+         'sadness': [],
+         'disgust': [],
+         'joy': [],
+         }
+
+    for idx in tqdm(range(len(df['corpus'])), desc='Adding nrc features'):
+
+        text = df['corpus'][idx]
+        nrc = NRCLex(text).affect_frequencies
+
+        for key in nrc:
+
+            if 'anticip' in key:
+                continue
+
+            d[key].append(nrc[key])
+
+    for key in d:
+        print(len(d[key]))
+        df[key] = d[key]
+
+    return(df)
+
+
+def add_nrc(df):
+
+    d = {'fear': [],
+         'anger': [],
+         'trust': [],
+         'surprise': [],
+         'positive': [],
+         'negative': [],
+         'sadness': [],
+         'disgust': [],
+         'joy': [],
+         }
+
+    for idx in tqdm(range(len(df['corpus'])), desc='Adding nrc features'):
+
+        ds = {'fear': [],
+              'anger': [],
+              'trust': [],
+              'surprise': [],
+              'positive': [],
+              'negative': [],
+              'sadness': [],
+              'disgust': [],
+              'joy': [],
+              }
+
+        text = df['corpus'][idx]
+        nrc = NRCLex(text)
+
+        for sentence in nrc.sentences:
+            nrc_sent = NRCLex(str(sentence))
+
+            nrc_dict = nrc_sent.affect_frequencies
+
+            for key in nrc_dict:
+
+                if 'anticip' in key:
+                    continue
+
+                ds[key].append(nrc_dict[key])
+
+        for key in ds:
+            d[key].append(ds[key])
+
+    for key in d:
+        print(len(d[key]))
+        df[key] = d[key]
 
     return(df)
 
@@ -177,10 +263,12 @@ def clean_text(df):
 
 
 def main():
-    df = pd.read_csv(os.getcwd() + '/data/pg.csv').drop(['Unnamed: 0'], axis=1)
+    df = pd.read_csv(
+        os.getcwd() + '/data/pg.csv').drop(['Unnamed: 0'], axis=1)
     df = add_filenames(df)
     df = add_meta(df)
     df = extract_text_simple(df)
+    df = add_nrc(df)
     df = clean_text(df)
     df.to_csv(os.getcwd() + '/data/pg_clean.csv', index=False)
 
