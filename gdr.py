@@ -9,7 +9,8 @@ from tqdm import tqdm
 
 if __name__ == '__main__':
 
-    df = pd.read_csv(os.getcwd() + '/data/pg_clean.csv')[0:15]
+    # df = pd.read_csv(os.getcwd() + '/data/pg_clean.csv')
+    df = pd.read_csv('aws.csv')
     base_url = 'https://www.goodreads.com/search?q='
 
     rv = []
@@ -72,12 +73,12 @@ if __name__ == '__main__':
                 ratings_dict['rating'].append(float(rval))
                 ratings_dict['sample_size'].append(float(sample))
 
-            print(ratings_dict)
+            # print(ratings_dict)
 
             max_ss = max(ratings_dict['sample_size'])
             max_ss_idx = ratings_dict['sample_size'].index(max_ss)
 
-            print("max_ss: {}, max_ss_idx: {}".format(max_ss, max_ss_idx))
+            # print("max_ss: {}, max_ss_idx: {}".format(max_ss, max_ss_idx))
 
             rv.append(ratings_dict['rating'][max_ss_idx])
             rs.append(ratings_dict['sample_size'][max_ss_idx])
