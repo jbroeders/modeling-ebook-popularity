@@ -1,5 +1,6 @@
 import pandas as pd
 import requests
+import jaro
 import time
 import os
 
@@ -8,74 +9,87 @@ from tqdm import tqdm
 
 if __name__ == '__main__':
 
-    df = pd.read_csv(os.getcwd() + '/data/pg_clean.csv')
+    df = pd.read_csv(os.getcwd() + '/data/pg_clean.csv')[0:15]
     base_url = 'https://www.goodreads.com/search?q='
 
-    r = []
-    ra = []
+    rv = []
+    rs = []
 
-    try:
+    for idx in tqdm(range(len(df)), desc='Getting book ratings'):
 
-        for idx in tqdm(range(759, len(df)), desc='Getting book ratings'):
+        if idx % 50 == 0 and idx != 0:
+            time.sleep(220)
 
-            if idx % 50 == 0 and idx != 0:
-                time.sleep(160)
+        title = df['title'][idx]
+        auth = df['author'][idx]
 
-            title = df['title'][idx]
-            auth = df['author'][idx]
+        try:
+            url = (base_url + title + ' ' + auth).replace(' ', '%20')
 
-            try:
-                url = (base_url + title + ' ' + auth).replace(' ', '%20')
+        except Exception as e:
+            rv.append(0)
+            rs.append(0)
 
-            except Exception as e:
-                r.append(0)
-                ra.append(0)
+        resp = requests.get(url)
+        soup = BeautifulSoup(resp.text, features="lxml")
 
-            resp = requests.get(url)
-            soup = BeautifulSoup(resp.text, features="lxml")
+        ratings = soup.find_all("span", {"class": "minirating"})
+        titles = soup.find_all("span", {"role": "heading"})
+        authors = soup.find_all("span", {"itemprop": "author"})
 
-            ratings = soup.find_all("span", {"class": "minirating"})
+        ratings_dict = {
+            'rating': [],
+            'sample_size': []
+        }
 
-            try:
-                text = ratings[0].text
+        try:
+            for i in range(len(ratings)):
+                jw = jaro.jaro_winkler_metric(
+                    title+auth, titles[i].text + authors[i].text)
 
-                for idx in range(len(text)):
+                if jw > 0.8:
+                    text = ratings[i].text
 
-                    if text[idx].isnumeric():
-                        rating = text[idx:idx+3]
+                    for idx in range(len(text)):
 
-                        break
+                        if text[idx].isnumeric():
+                            rval = text[idx:idx+3]
 
-                for idx in reversed(range(len(text))):
+                            break
 
-                    if text[idx].isnumeric():
+                    for idx in reversed(range(len(text))):
 
-                        sample = text[idx]
+                        if text[idx].isnumeric():
 
-                        while text[idx-1].isnumeric():
-                            sample = text[idx - 1] + sample
-                            idx = idx - 1
+                            sample = text[idx]
 
-                        break
+                            while text[idx-1].isnumeric():
+                                sample = text[idx - 1] + sample
+                                idx = idx - 1
 
-                r.append(rating)
-                ra.append(sample)
+                            break
 
-            except Exception as e:
-                r.append(0)
-                ra.append(0)
+                ratings_dict['rating'].append(float(rval))
+                ratings_dict['sample_size'].append(float(sample))
 
-            time.sleep(5)
+            print(ratings_dict)
 
-        df['rating'] = r
-        df['rating_amount'] = ra
+            max_ss = max(ratings_dict['sample_size'])
+            max_ss_idx = ratings_dict['sample_size'].index(max_ss)
 
-        df.to_csv(os.getcwd() + '/data/pg_ratings.csv')
+            print("max_ss: {}, max_ss_idx: {}".format(max_ss, max_ss_idx))
 
-    except Exception as e:
+            rv.append(ratings_dict['rating'][max_ss_idx])
+            rs.append(ratings_dict['sample_size'][max_ss_idx])
 
-        df = pd.DataFrame()
-        df['rating'] = r
-        df['rating_amount'] = ra
+        except Exception as e:
+            # print(e)
+            rv.append(0)
+            rs.append(0)
 
-        df.to_csv(os.getcwd() + '/data/ratings_temp2.csv')
+        time.sleep(12)
+
+    df['rating'] = rv
+    df['rating_amount'] = rs
+
+    df.to_csv(os.getcwd() + '/data/pg_ratings.csv')
