@@ -68,7 +68,6 @@ def get_fiction_identifiers():
 
 def get_content(df):
 
-    df = pd.read_csv('pg.csv')[-10:].reset_index(drop=True)
     df['filename'] = 0
 
     base_url = 'https://www.gutenberg.org/ebooks/'
@@ -78,12 +77,14 @@ def get_content(df):
         book_id = df['id'][idx]
         filename = '{}.epub'.format(book_id)
 
-        resp = requests.get(
-            base_url + "{}.epub.noimages".format(book_id), allow_redirects=True)
 
         if os.path.isfile(os.getcwd() + '/data/pg/{}'.format(filename)):
             df['filename'][idx] = filename
             continue
+
+        resp = requests.get(
+            base_url + "{}.epub.noimages".format(book_id), allow_redirects=True)
+
 
         if resp.headers.get('Content-Type') == 'application/epub+zip':
 
@@ -96,13 +97,15 @@ def get_content(df):
 
             df['filename'][idx] = 'none'
 
-    # df.to_csv('pg.csv')
+
+        time.sleep(12)
+
+    df.to_csv('pg_complete.csv')
 
     return(df)
 
 
 if __name__ == '__main__':
 
-    # df = get_fiction_identifiers()
-    df = pd.read_csv('pg.csv')
+    df = pd.read_csv(os.getcwd() + '/data/pg.csv')
     get_content(df)

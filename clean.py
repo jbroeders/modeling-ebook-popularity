@@ -174,7 +174,7 @@ def extract_text_simple(df):
     return(df)
 
 
-def add_nrc_simple(df):
+def add_nrc_baseline(df):
 
     d = {'fear': [],
          'anger': [],
@@ -261,18 +261,42 @@ def clean_text(df):
 
     return(df)
 
+def add_ratings(df):    
+    ratings = pd.read_csv(os.getcwd() + '/data/pgr.csv')
+    df = df.merge(ratings, on='id').reset_index(drop=True)
+
+    print(df.columns)
+
+    df = df[df['rating'] > 0]
+    df = df[df['rating_amount'] > 15] 
+
+    # df['author'] = df['author_x']
+    # df['title'] = df['title_x']
+    
+    return(df.reset_index(drop=True))
 
 def main():
     df = pd.read_csv(
-        os.getcwd() + '/data/pg.csv').drop(['Unnamed: 0'], axis=1)
+        os.getcwd() + '/data/pg.csv').drop(['Unnamed: 0'], axis=1)[0:100]
+    df = add_ratings(df)
     df = add_filenames(df)
     df = add_meta(df)
     df = extract_text_simple(df)
+    # df = add_nrc_baseline(df)
     df = add_nrc(df)
     df = clean_text(df)
+
+
+    # df = df[['id', 'fear', 'anger', 'trust', 'surprise', 'positive', 'negative', 'sadness', 
+    #          'disgust', 'joy', 'rating']].reset_index(drop=True)
+    
+    df = df[['id', 'author', 'title',  'fear', 'anger', 'trust', 'surprise', 'positive', 'negative', 'sadness', 
+             'disgust', 'joy', 'rating']].reset_index(drop=True)
+
     df.to_csv(os.getcwd() + '/data/pg_clean.csv', index=False)
 
 
 if __name__ == '__main__':
 
     main()
+

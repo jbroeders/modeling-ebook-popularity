@@ -30,6 +30,7 @@ if __name__ == '__main__':
         except Exception as e:
             rv.append(0)
             rs.append(0)
+            continue
 
         resp = requests.get(url)
         soup = BeautifulSoup(resp.text, features="lxml")

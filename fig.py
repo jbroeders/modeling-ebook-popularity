@@ -16,6 +16,8 @@ def genre_bar(df):
     x = vc.index.get_level_values(0).values
     y = vc.values
 
+    print(x, y)
+
     plt.subplots_adjust(bottom=0.20)
 
     ax = sns.barplot(x, y, palette='autumn')
@@ -56,8 +58,8 @@ def nrc_values(df, idx):
 
 if __name__ == '__main__':
 
-    df = pd.read_csv(os.getcwd() + '/data/pg_clean.csv')
+    df = pd.read_csv(os.getcwd() + '/data/pg.csv')
     genre_bar(df)
 
-    for idx in range(5):
-        nrc_values(df, idx)
+    # for idx in range(5):
+    #     nrc_values(df, idx)
