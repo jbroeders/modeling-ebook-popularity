@@ -16,11 +16,9 @@ def genre_bar(df):
     x = vc.index.get_level_values(0).values
     y = vc.values
 
-    print(x, y)
-
     plt.subplots_adjust(bottom=0.20)
-
     ax = sns.barplot(x, y, palette='autumn')
+    
     ax.set_xticklabels(x, rotation=45)
     ax.set_xlabel('Genre')
     ax.set_ylabel('Book amount')
@@ -28,6 +26,15 @@ def genre_bar(df):
     ax.grid(axis='y')
     ax.figure.savefig(os.getcwd() + '/fig/genre_bar.png')
 
+def rating_distributions(df):
+
+    plt.figure(figsize=(6.4, 4.8))
+    ax = sns.displot(df['rating'], kde=True, bins=23)
+    ax.figure.savefig(os.getcwd() + '/fig/rating_hist')
+
+    plt.figure(figsize=(6.4, 4.8))
+    ax = sns.displot(df['rating_amount'], kde=True, bins=23)
+    ax.figure.savefig(os.getcwd() + '/fig/rating_amount_hist')
 
 def nrc_values(df, idx):
 
@@ -58,8 +65,9 @@ def nrc_values(df, idx):
 
 if __name__ == '__main__':
 
-    df = pd.read_csv(os.getcwd() + '/data/pg.csv')
+    df = pd.read_csv(os.getcwd() + '/data/pg_clean.csv')
     genre_bar(df)
+
 
     # for idx in range(5):
     #     nrc_values(df, idx)
