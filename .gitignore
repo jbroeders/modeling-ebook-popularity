@@ -1,5 +1,9 @@
 data/
 data/*
+lib/aws.csv
+lib/pg_files.csv
+lib/pgr.csv
+lib/nrc_en.json
 .ipynb_checkpoints/
 .ipynb_checkpoints/*
 epub_pp.ipynb

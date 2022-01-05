@@ -100,7 +100,11 @@ def get_content(df):
 
         time.sleep(12)
 
+
+    df = df[df['filename'] != 'none'].reset_index(drop=True)
     df.to_csv(os.getcwd() + '/data/pg_files.csv')
+
+    return(df)
 
 def get_ratings():
 
@@ -187,7 +191,7 @@ def get_ratings():
     df['rating'] = rv
     df['rating_amount'] = rs
 
-    df.to_csv(os.getcwd() + '/data/pg_ratings.csv')
+    df.to_csv(os.getcwd() + '/data/pg_ratings.csv', index=False)
 
 
 if __name__ == '__main__':

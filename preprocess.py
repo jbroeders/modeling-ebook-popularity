@@ -1,38 +1,30 @@
 import pandas as pd
+import ebooklib
 import pickle
 import os
 
+
+from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.preprocessing import MinMaxScaler
 from bs4 import BeautifulSoup
-
-import ebooklib
+from textblob import TextBlob
 from ebooklib import epub
-from tqdm import tqdm
-
 from nrclex import NRCLex
+from joblib import dump, load
+from tqdm import tqdm
+import numpy as np
 
 
-def add_filenames(df):
+import matplotlib.pyplot as plt
 
-    df['filename'] = [str(i) + '.epub' for i in df['id']]
-
-    for i in tqdm(range(len(df)), desc="Adding filenames"):
-        filename = df['filename'][i]
-
-        if not os.path.isfile(os.getcwd() + '/data/pg/{}'.format(filename)):
-            df = df.drop(i, axis=0)
-
-    df = df.reset_index(drop=True)
-
-    return(df)
-
-
-def add_meta(df):
+def extract_metadata(df):
 
     titles = []
     authors = []
     langs = []
 
-    for i in tqdm(range(len(df)), desc='Adding metadata'):
+    for i in tqdm(range(len(df)), desc='Extracting metadata'):
         filename = df['filename'][i]
 
         book = epub.read_epub(os.getcwd() + '/data/pg/{}'.format(filename))
@@ -59,241 +51,175 @@ def add_meta(df):
 
     return(df)
 
+def filter_df(df):
 
-def extract_text(df):
+    initial_length = len(df)
+    df = df[df['lang'] == 'en'].reset_index(drop=True)
+    fl = len(df)
+    print('Removed {} books which do not have English as its main language'.format(initial_length - fl))
+    df = df[df['rating_amount'] > 20].reset_index(drop=True)
+    print('Removed {} books which have not been rated at least 20 times'.format(fl - len(df)))
 
-    df['corpus'] = ''
-    df['sentences'] = [[] for i in range(len(df))]
-    df['paragraphs'] = [[] for i in range(len(df))]
+    return(df)
 
-    book = epub.read_epub(os.getcwd() + '/data/pg/' + df['filename'][0])
+def scale_sequence(sequence):
+    scaler = MinMaxScaler(feature_range=(-1, 1))
+    sequence = np.array(sequence).reshape(-1, 1)
+    sequence = scaler.fit_transform(sequence)
+    x = [i for i in range(len(sequence))]
 
-    for idx in tqdm(range(len(df))):
+    sequence = [i[0] for i in sequence]
+    return(sequence)
+    # plt.plot(x, sequence)
+    # plt.show()
+
+def fft(sequence):
+
+    # plt.figure()
+
+    n = [i for i in range(len(sequence))]
+
+    rft = np.fft.rfft(sequence)
+    rft[4:] = 0
+    y_smooth = np.fft.irfft(rft)
+    x = [i for i in range(len(y_smooth))]
+
+    return(y_smooth)
+    # plt.plot(x, y_smooth)
+    # plt.show()
+
+def sentiment(sequence):
+    analyzer = SentimentIntensityAnalyzer()
+
+    scores = []
+    for s in sequence:
+        scores.append(analyzer.polarity_scores(s)['compound'])
+
+
+    return(scores)
+
+
+def nrc(sequence):
+    pass
+
+
+def process_text(df):
+
+    rf = load(os.getcwd() + '/lib/rf_textextraction.joblib')
+
+    df_temp = pd.DataFrame()
+    ids = []
+    ps = []
+
+    for idx in tqdm(range(len(df)), desc='Processing text'):
+
         filename = df['filename'][idx]
         book = epub.read_epub(os.getcwd() + '/data/pg/' + filename)
 
-        s = []
-        ps = []
-        res = ''
-
         for item in book.get_items():
+
             if item.get_type() == ebooklib.ITEM_DOCUMENT:
 
                 html = item.get_content()
                 soup = BeautifulSoup(html, features='lxml')
                 paragraphs = soup.find_all('p')
+            
+                if len(paragraphs) > 1:
 
-                for p in paragraphs[0:5]:
+                    for p in paragraphs:
+                        ps.append(p.text)
+                        ids.append(df['id'][idx])
 
-                    text = p.text
+    df_temp['id'] = ids
+    df_temp['paragraph'] = ps
 
-                    if 'Illustrated' in text or 'Transcriber' in text or text[0:2] == 'By':
-                        continue
+    df_temp = df_temp.dropna(subset=['paragraph']).reset_index(drop=True)
 
-                    sentences = text.split('.')
-                    for sentence in sentences:
-                        s.append(sentence)
+    df_temp['paragraph'] = [i if isinstance(i, str) else str(i) for i in df_temp['paragraph']]
 
-                    ps.append(text)
-                    res += text
+    corpus = ';'.join(tuple(df_temp['paragraph'].apply(lambda x: x.replace(';', '')))).lower().split(';')
 
-                for p in paragraphs[5:-5]:
+    vocab = ['by', 'illustrated', 'illustrations', 'note', 'notes', 'transcriber', "transcriber's",
+             'chapter', 'editor', 'u.s.', 'copyright', 'publication', 'publisher',
+            'renewed', 'published', 'ace', 'york', 'end']
 
-                    text = p.text
 
-                    sentences = text.split('.')
-                    for sentence in sentences:
-                        s.append(sentence)
+    tfidf = TfidfVectorizer(vocabulary = vocab)
+    X = tfidf.fit_transform(corpus)
 
-                    ps.append(text)
-                    res += text
+    df_temp['yhat'] = rf.predict(X)
 
-                for p in paragraphs[-5:]:
-                    text = p.text
 
-                    if ('Editor' in text) or ('END' in text) or ('errors' in text) or ('[1]' in text) or ('Transcriber' in text):
-                        continue
+    grouped = df_temp.groupby(by='id')
+    df = df.set_index('id')
+    df['sentences'] = 0
+    df['words'] = 0
 
-                    sentences = text.split('.')
-                    for sentence in sentences:
-                        s.append(sentence)
 
-                    ps.append(text)
-                    res += text
+    ids = []
+    sequences = []
+    ratings = []
 
-        df['sentences'][idx] = s
-        df['paragraphs'][idx] = ps
-        df['corpus'][idx] = res
+    for name, dfg in tqdm(grouped):
+        dfg = dfg[dfg['yhat'] == 1]
+        book_corpus = ' '.join(';'.join(tuple(dfg['paragraph'].apply(lambda x: x.replace(';', '')))).lower().split(';'))
 
-    return(df)
+        sentences = TextBlob(book_corpus).sentences
+        words = TextBlob(book_corpus).words
 
+        windows = []
 
-def extract_text_simple(df):
+        for i in range(len(words)):
 
-    df['corpus'] = ''
-    book = epub.read_epub(os.getcwd() + '/data/pg/' + df['filename'][0])
+            window = []
 
-    for idx in tqdm(range(len(df)), desc='Extracting text'):
-        filename = df['filename'][idx]
-        book = epub.read_epub(os.getcwd() + '/data/pg/' + filename)
+            if i < 3:
+                window.append(words[0:i+4])
 
-        res = ''
+            elif i > len(words) - 3:
+                window.append(words[i-3:i+1])
 
-        for item in book.get_items():
-            if item.get_type() == ebooklib.ITEM_DOCUMENT:
+            else:
+                window.append(words[i-3:i+4])
 
-                html = item.get_content()
-                soup = BeautifulSoup(html, features='lxml')
-                paragraphs = soup.find_all('p')
+            windows.append(window)
 
-                for p in paragraphs[0:5]:
 
-                    text = p.text
+        
 
-                    if 'Illustrated' in text or 'Transcriber' in text or text[0:2] == 'By':
-                        continue
+        if len(sentences) > 1:
 
-                    res += text
+            s = sentiment(sentences)
+            s = fft(s)
+            s = scale_sequence(s)
 
-                for p in paragraphs[5:-5]:
+            sequences.append(s)
+            ratings.append(df['rating'][name])
+            ids.append(name)
 
-                    text = p.text
-                    res += text
+    res = pd.DataFrame()
+    res['id'] = ids
+    res['sentiment'] = sequences
+    res['rating'] = ratings
 
-                for p in paragraphs[-5:]:
-                    text = p.text
 
-                    if ('Editor' in text) or ('END' in text) or ('errors' in text) or ('[1]' in text) or ('Transcriber' in text):
-                        continue
+    return(res)
 
-                    res += text
 
-        # df['corpus'][idx] = res
-        df.loc[idx, 'corpus'] = res
 
-    return(df)
 
 
-def add_nrc_baseline(df):
 
-    d = {'fear': [],
-         'anger': [],
-         'trust': [],
-         'surprise': [],
-         'positive': [],
-         'negative': [],
-         'sadness': [],
-         'disgust': [],
-         'joy': [],
-         }
 
-    for idx in tqdm(range(len(df['corpus'])), desc='Adding nrc features'):
-
-        text = df['corpus'][idx]
-        nrc = NRCLex(text).affect_frequencies
-
-        for key in nrc:
-
-            if 'anticip' in key:
-                continue
-
-            d[key].append(nrc[key])
-
-    for key in d:
-        print(len(d[key]))
-        df[key] = d[key]
-
-    return(df)
-
-
-def add_nrc(df):
-
-    d = {'fear': [],
-         'anger': [],
-         'trust': [],
-         'surprise': [],
-         'positive': [],
-         'negative': [],
-         'sadness': [],
-         'disgust': [],
-         'joy': [],
-         }
-
-    for idx in tqdm(range(len(df['corpus'])), desc='Adding nrc features'):
-
-        ds = {'fear': [],
-              'anger': [],
-              'trust': [],
-              'surprise': [],
-              'positive': [],
-              'negative': [],
-              'sadness': [],
-              'disgust': [],
-              'joy': [],
-              }
-
-        text = df['corpus'][idx]
-        nrc = NRCLex(text)
-
-        for sentence in nrc.sentences:
-            nrc_sent = NRCLex(str(sentence))
-
-            nrc_dict = nrc_sent.affect_frequencies
-
-            for key in nrc_dict:
-
-                if 'anticip' in key:
-                    continue
-
-                ds[key].append(nrc_dict[key])
-
-        for key in ds:
-            d[key].append(ds[key])
-
-    for key in d:
-        print(len(d[key]))
-        df[key] = d[key]
-
-    return(df)
-
-
-def clean_text(df):
-
-    return(df)
-
-def add_ratings(df):    
-    ratings = pd.read_csv(os.getcwd() + '/data/pgr.csv')
-    df = df.merge(ratings, on='id').reset_index(drop=True)
-
-    print(df.columns)
-
-    df = df[df['rating'] > 0]
-    df = df[df['rating_amount'] > 15] 
-
-    # df['author'] = df['author_x']
-    # df['title'] = df['title_x']
-    
-    return(df.reset_index(drop=True))
 
 def main():
-    df = pd.read_csv(
-        os.getcwd() + '/data/pg.csv').drop(['Unnamed: 0'], axis=1)[0:100]
-    df = add_ratings(df)
-    df = add_filenames(df)
-    df = add_meta(df)
-    df = extract_text_simple(df)
-    # df = add_nrc_baseline(df)
-    df = add_nrc(df)
-    df = clean_text(df)
+    df = pd.read_csv(os.getcwd() + '/data/pg_ratings.csv')
+    df = extract_metadata(df)
+    df = filter_df(df)
 
+    res = process_text(df)
+    res.to_csv(os.getcwd() + '/data/pg_clean.csv')
 
-    # df = df[['id', 'fear', 'anger', 'trust', 'surprise', 'positive', 'negative', 'sadness', 
-    #          'disgust', 'joy', 'rating']].reset_index(drop=True)
-    
-    df = df[['id', 'author', 'title',  'fear', 'anger', 'trust', 'surprise', 'positive', 'negative', 'sadness', 
-             'disgust', 'joy', 'rating']].reset_index(drop=True)
-
-    df.to_csv(os.getcwd() + '/data/pg_clean.csv', index=False)
 
 
 if __name__ == '__main__':

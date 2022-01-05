@@ -1,0 +1,6 @@
+decisions to make:
+which features to use
+minmax scale in or exclusive
+
+things to implement:
+- ratings two decimals

@@ -18,7 +18,7 @@ def genre_bar(df):
 
     plt.subplots_adjust(bottom=0.20)
     ax = sns.barplot(x, y, palette='autumn')
-    
+
     ax.set_xticklabels(x, rotation=45)
     ax.set_xlabel('Genre')
     ax.set_ylabel('Book amount')
@@ -61,6 +61,63 @@ def nrc_values(df, idx):
     ax.grid()
 
     ax.figure.savefig(os.getcwd() + '/fig/nrc_{}'.format(idx))
+
+def raw_sequences(df, idx):
+
+    val_columns = ['positive', 'negative']
+
+    plt.figure(figsize=(6.4, 4.8))
+
+    for val in val_columns:
+        
+        
+        y = json.loads(df[val][idx])
+        n = [i for i in range(len(y))]
+        
+        
+        plt.plot(n, y, label=val)
+        
+        
+        
+        
+
+    plt.xlabel('Sentence')
+    plt.ylabel('Emotion frequency')
+    plt.title(df['title'][idx] + ' by ' + df['author'][idx])
+    plt.legend(loc='best')
+    plt.grid()
+
+def fft_transforms(df, idx, term):
+
+    nrc_columns = ['positive', 'negative']
+
+    plt.figure(figsize=(6.4, 4.8))
+
+    for val in nrc_columns:
+        
+        
+        y = json.loads(df[val][idx])
+        n = [i for i in range(len(y))]
+        
+        rft = np.fft.rfft(y)
+        rft[term:] = 0
+        y_smooth = np.fft.irfft(rft)
+        
+        x = [i for i in range(len(y_smooth))]
+        # plt.plot(n, y, label=val)
+        plt.plot(x, y_smooth, label=val)
+        
+        
+        
+        
+
+    plt.xlabel('Sentence')
+    plt.ylabel('Emotion frequency')
+    plt.title(df['title'][idx] + ' by ' + df['author'][idx])
+    plt.legend(loc='best')
+    plt.grid()
+
+    
 
 
 if __name__ == '__main__':
