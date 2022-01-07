@@ -1,51 +1,87 @@
 import matplotlib.pyplot as plt
+import random
 import pandas as pd
 import numpy as np 
 import ast
+import os
 
 from keras.preprocessing.sequence import pad_sequences
 from keras.layers import Dense, Activation
 from keras.models import Sequential
 
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import train_test_split, KFold
+from sklearn.metrics import mean_squared_error, mean_absolute_error
 from joblib import load
+from tqdm import tqdm
 
-df = pd.read_csv('res.csv')
-y = df['rating']
-X = [ast.literal_eval(i) for i in df['sentiment']]
+def shorten_sequence(seq):
+    n = len(seq)
+    # print(n)
 
-# X = np.asarray(load('sequences.arr')[0:3])
-# y = load('ratings.arr')[0:3]
-print(X)
-X = pad_sequences(X, padding='post', value=-1000, dtype='float32')
+    res = []
 
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.15, random_state=2)
+    if n > 100:
+        split = n/100
 
-print(X_train[0:10])
-print(y_train[0:10])
-# Initialising the ANN
-model = Sequential()
+        for i in range(100):
+            res.append(np.mean(seq[int(i*split): int(i*split + split)]))
 
-# Adding the input layer and the first hidden layer
-model.add(Dense(32, activation = 'relu', input_dim = 5418))
+    else:
 
-# Adding the second hidden layer
-model.add(Dense(units = 32, activation = 'relu'))
+        # print(seq)
+        res = pad_sequences([seq], padding='post', dtype='float32', value =0, maxlen = 100)
+        return(res[0])
 
-# Adding the third hidden layer
-model.add(Dense(units = 32, activation = 'relu'))
+    # x = [i for i in range(100)]
+    # plt.figure()
+    # plt.plot(x, res)
+    # plt.show()
+    return(np.array(res))
 
-# Adding the output layer
-model.add(Dense(units = 1))
+if __name__ == '__main__':
 
-model.compile(optimizer = 'adam',loss = 'mean_squared_error')
+    df = pd.read_csv(os.getcwd() + '/data/pg_clean.csv')
+    y = np.array(df['rating']).reshape(-1, 1)
 
-model.fit(X_train, y_train, batch_size = 10, epochs = 100)
+    X = np.array([shorten_sequence(ast.literal_eval(i)) for i in tqdm(df['sentiment'], desc='Shortening sequences')])
 
-y_pred = model.predict(X_test)
+    
+ 
 
-plt.plot(y_test, color = 'red', label = 'Real data')
-plt.plot(y_pred, color = 'blue', label = 'Predicted data')
-plt.title('Prediction')
-plt.legend()
-plt.show()
+    model = Sequential()
+    model.add(Dense(32, activation = 'relu', input_dim = 100))
+    model.add(Dense(units = 128, activation = 'relu'))
+    model.add(Dense(units = 128, activation = 'relu'))
+    model.add(Dense(units = 1))
+
+    model.compile(optimizer = 'adam',loss = 'mean_squared_error')
+    kf = KFold(n_splits=5, shuffle=True, random_state=2)
+
+    for train_index, test_index in kf.split(X):
+
+        X_train, X_test = X[train_index], X[test_index]
+        y_train, y_test = y[train_index], y[test_index]
+
+        model.compile(optimizer = 'adam',loss = 'mean_squared_error')
+        model.fit(X_train, y_train, batch_size = 10, epochs = 125, verbose=False)
+
+        y_pred = model.predict(X_test)
+
+        print('MAE: {}'.format(mean_absolute_error(y_test, y_pred)))
+        print('RMSE: {}'.format(mean_squared_error(y_test, y_pred, squared=False)))
+
+
+    x = [i for i in range(len(y_pred))]
+
+    plt.figure()
+    plt.plot(x, y_test, color = 'red', label = 'Real data')
+    plt.plot(x, y_pred, color = 'blue', label = 'Predicted data')
+    plt.title('Prediction, MAE: {}'.format(mean_absolute_error(y_test, y_pred)))
+    plt.legend()
+    plt.show()
+
+    diff = abs(y_pred - y_test)
+    plt.figure()
+    plt.plot(x, diff)
+    plt.title('Prediction, Differences')
+    plt.show()

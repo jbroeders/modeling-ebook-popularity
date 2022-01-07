@@ -194,14 +194,24 @@ def process_text(df):
             s = scale_sequence(s)
 
             sequences.append(s)
-            ratings.append(df['rating'][name])
-            ids.append(name)
+            rating = df['rating'][name]
+            print(rating, name)
+
+            try:
+                assert isinstance(rating, float)
+                ratings.append(rating)
+
+            except:
+                assert(isinstance(rating.values[0], float))
+                ratings.append(rating.values[0])
+
+            ids.append(int(name))
+
 
     res = pd.DataFrame()
     res['id'] = ids
     res['sentiment'] = sequences
     res['rating'] = ratings
-
 
     return(res)
 
