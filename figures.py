@@ -1,5 +1,6 @@
 import os
 import json
+import joblib
 import numpy as np
 import pandas as pd
 import seaborn as sns
@@ -62,69 +63,128 @@ def nrc_values(df, idx):
 
     ax.figure.savefig(os.getcwd() + '/fig/nrc_{}'.format(idx))
 
-def raw_sequences(df, idx):
-
-    val_columns = ['positive', 'negative']
-
-    plt.figure(figsize=(6.4, 4.8))
-
-    for val in val_columns:
+def raw_sequence(y):
         
+    x = [i for i in range(len(y))]
+    plt.plot(x, y, label='sentiment')
         
-        y = json.loads(df[val][idx])
-        n = [i for i in range(len(y))]
-        
-        
-        plt.plot(n, y, label=val)
-        
-        
-        
-        
-
-    plt.xlabel('Sentence')
-    plt.ylabel('Emotion frequency')
-    plt.title(df['title'][idx] + ' by ' + df['author'][idx])
-    plt.legend(loc='best')
-    plt.grid()
-
-def fft_transforms(df, idx, term):
-
-    nrc_columns = ['positive', 'negative']
-
-    plt.figure(figsize=(6.4, 4.8))
-
-    for val in nrc_columns:
-        
-        
-        y = json.loads(df[val][idx])
-        n = [i for i in range(len(y))]
-        
-        rft = np.fft.rfft(y)
-        rft[term:] = 0
-        y_smooth = np.fft.irfft(rft)
-        
-        x = [i for i in range(len(y_smooth))]
-        # plt.plot(n, y, label=val)
-        plt.plot(x, y_smooth, label=val)
-        
-        
-        
-        
-
-    plt.xlabel('Sentence')
-    plt.ylabel('Emotion frequency')
-    plt.title(df['title'][idx] + ' by ' + df['author'][idx])
-    plt.legend(loc='best')
-    plt.grid()
-
     
 
+    plt.xlabel('Sentence')
+    plt.ylabel('Compound Score')
+    # plt.title(df['title'][idx] + ' by ' + df['author'][idx])
+    plt.title('Raw values')
+    # plt.legend(loc='best')
+    plt.grid()
+    plt.show()
+
+def fft_transform(y, term):
+
+        
+    x = [i for i in range(len(y))]
+    plt.plot(x, y, label='sentiment')
+        
+    
+
+    plt.xlabel('Sentence')
+    plt.ylabel('Compound Score')
+    # plt.title(df['title'][idx] + ' by ' + df['author'][idx])
+    plt.title('FFT')
+    # plt.legend(loc='best')
+    plt.grid()
+    plt.show()
+    
+
+def fft_scaled(y):
+
+        
+    x = [i for i in range(len(y))]
+    plt.plot(x, y, label='sentiment')
+        
+    
+
+    plt.xlabel('Narrative time')
+    plt.ylabel('Compound Score')
+    # plt.title(df['title'][idx] + ' by ' + df['author'][idx])
+    plt.title('Scaled and Standardized')
+    # plt.legend(loc='best')
+    plt.grid()
+    plt.show()
+
+
+def pp_plot(s1, s2, s3):
+
+    fig, (ax1, ax2, ax3) = plt.subplots(3, 1)
+
+    x = [i for i in range(len(s1))]
+    ax1.plot(x, s1)
+    ax1.set_title('Sentiment Scores (Raw)')
+    ax1.set_ylabel('Compound Score')
+    ax1.set_xlabel('Sentence')
+    ax1.grid()
+
+    x = [i for i in range(len(s2))]
+    ax2.plot(x, s2)
+    ax2.set_title('Sentiment Scores (FFT)')
+    ax2.set_ylabel('Compound Score')
+    ax2.set_xlabel('Sentence')
+    ax2.grid()
+
+    x = [i for i in range(len(s3))]
+    ax3.plot(x, s3)
+    ax3.set_title('Sentiment Scores (scaled/standardized)')
+    ax3.set_ylabel('Compound Score')
+    ax3.set_xlabel('Narrative time')
+    ax3.grid()
+
+    fig.tight_layout(pad=1.5)
+    #fig.suptitle('Sentiment Vector')
+    plt.savefig(os.getcwd() + '/fig/pp_plot.png')
+
+    plt.show()
+
+    fig.savefig(os.getcwd() + '/fig/pp_plot.png')
+
+def fft_terms(s1, s2, s3, s4):
+
+    fig, (ax1, ax2, ax3, ax4) = plt.subplots(4, 1)
+
+    x = [i for i in range(len(s1))]
+    
+    ax1.plot(x, s1)
+    ax1.set_title('FFT: 2nd order')
+    ax1.set_ylabel('Compound Score')
+    ax1.set_xlabel('Narrative Time')
+
+    ax2.plot(x, s2)
+    ax2.set_title('FFT: 3rd order')
+    ax2.set_ylabel('Compound Score')
+    ax2.set_xlabel('Narrative Time')
+
+    ax3.plot(x, s3)
+    ax3.set_title('FFT: 4th order')
+    ax3.set_ylabel('Compound Score')
+    ax3.set_xlabel('Narrative Time')
+
+    ax4.plot(x, s4)
+    ax4.set_title('FFT: 5th order')
+    ax4.set_ylabel('Compound Score')
+    ax4.set_xlabel('Narrative Time')
+
+    fig.tight_layout(pad=1.5)
+    plt.show()
+
+    fig.savefig(os.getcwd() + '/fig/fft_plot.png')
 
 if __name__ == '__main__':
 
-    df = pd.read_csv(os.getcwd() + '/data/pg_clean.csv')
-    genre_bar(df)
+    s1 = joblib.load(os.getcwd() + '/lib/sequence_raw.arr')
+    s2 = joblib.load(os.getcwd() + '/lib/sequence_fft.arr')
+    s3 = joblib.load(os.getcwd() + '/lib/sequence_fft_scaled.arr')
 
+    pp_plot(s1, s2, s3)
 
-    # for idx in range(5):
-    #     nrc_values(df, idx)
+    s1 = joblib.load(os.getcwd() + '/lib/sequence_fft_2')
+    s2 = joblib.load(os.getcwd() + '/lib/sequence_fft_3')
+    s3 = joblib.load(os.getcwd() + '/lib/sequence_fft_4')
+    s4 = joblib.load(os.getcwd() + '/lib/sequence_fft_5')

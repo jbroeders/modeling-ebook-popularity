@@ -62,13 +62,40 @@ def filter_df(df):
 
     return(df)
 
+def shorten_sequence(seq):
+    n = len(seq)
+    # print(n)
+
+    res = []
+
+    if n > 100:
+        split = n/100
+
+        for i in range(100):
+            res.append(np.mean(seq[int(i*split): int(i*split + split)]))
+
+    else:
+
+        # print(seq)
+        res = pad_sequences([seq], padding='post', dtype='float32', value =0, maxlen = 100)
+        return(res[0])
+
+    # x = [i for i in range(100)]
+    # plt.figure()
+    # plt.plot(x, res)
+    # plt.show()
+    return(np.array(res))
+
+
 def scale_sequence(sequence):
     scaler = MinMaxScaler(feature_range=(-1, 1))
     sequence = np.array(sequence).reshape(-1, 1)
     sequence = scaler.fit_transform(sequence)
     x = [i for i in range(len(sequence))]
 
-    sequence = [i[0] for i in sequence]
+    sequence = shorten_sequence([i[0] for i in sequence])
+    
+
     return(sequence)
     # plt.plot(x, sequence)
     # plt.show()
@@ -80,7 +107,7 @@ def fft(sequence):
     n = [i for i in range(len(sequence))]
 
     rft = np.fft.rfft(sequence)
-    rft[4:] = 0
+    rft[2:] = 0
     y_smooth = np.fft.irfft(rft)
     x = [i for i in range(len(y_smooth))]
 
@@ -190,8 +217,14 @@ def process_text(df):
         if len(sentences) > 1:
 
             s = sentiment(sentences)
+            # dump(s, os.getcwd() + '/lib/sequence_raw.arr')
+            # break
             s = fft(s)
+            # dump(s, os.getcwd() + '/lib/sequence_fft.arr')
+            # break
             s = scale_sequence(s)
+            dump(s, os.getcwd() + '/lib/sequence_fft_2.arr')
+            break
 
             sequences.append(s)
             rating = df['rating'][name]
