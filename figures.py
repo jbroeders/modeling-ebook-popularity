@@ -184,7 +184,9 @@ if __name__ == '__main__':
 
     pp_plot(s1, s2, s3)
 
-    s1 = joblib.load(os.getcwd() + '/lib/sequence_fft_2')
-    s2 = joblib.load(os.getcwd() + '/lib/sequence_fft_3')
-    s3 = joblib.load(os.getcwd() + '/lib/sequence_fft_4')
-    s4 = joblib.load(os.getcwd() + '/lib/sequence_fft_5')
+    s1 = joblib.load(os.getcwd() + '/lib/sequence_fft_2.arr')
+    s2 = joblib.load(os.getcwd() + '/lib/sequence_fft_3.arr')
+    s3 = joblib.load(os.getcwd() + '/lib/sequence_fft_4.arr')
+    s4 = joblib.load(os.getcwd() + '/lib/sequence_fft_5.arr')
+
+    fft_terms(s1, s2, s3, s4)

@@ -107,7 +107,7 @@ def fft(sequence):
     n = [i for i in range(len(sequence))]
 
     rft = np.fft.rfft(sequence)
-    rft[2:] = 0
+    rft[5:] = 0
     y_smooth = np.fft.irfft(rft)
     x = [i for i in range(len(y_smooth))]
 
@@ -256,7 +256,7 @@ def process_text(df):
 
 
 def main():
-    df = pd.read_csv(os.getcwd() + '/data/pg_ratings.csv')
+    df = pd.read_csv(os.getcwd() + '/data/pg_ratings.csv')[0:50]
     df = extract_metadata(df)
     df = filter_df(df)
 
