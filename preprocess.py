@@ -6,6 +6,7 @@ import os
 
 from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
 from sklearn.feature_extraction.text import TfidfVectorizer
+from keras.preprocessing.sequence import pad_sequences
 from sklearn.preprocessing import MinMaxScaler
 from bs4 import BeautifulSoup
 from textblob import TextBlob
@@ -62,52 +63,42 @@ def filter_df(df):
 
     return(df)
 
-def shorten_sequence(seq):
+def standardize_sequence(seq):
     n = len(seq)
-    # print(n)
-
     res = []
 
     if n > 100:
-        split = n/100
 
+        split = n/100
         for i in range(100):
             res.append(np.mean(seq[int(i*split): int(i*split + split)]))
 
     else:
 
-        # print(seq)
         res = pad_sequences([seq], padding='post', dtype='float32', value =0, maxlen = 100)
-        return(res[0])
+        return(res)
 
-    # x = [i for i in range(100)]
-    # plt.figure()
-    # plt.plot(x, res)
-    # plt.show()
-    return(np.array(res))
+   
+    return(res)
 
 
 def scale_sequence(sequence):
     scaler = MinMaxScaler(feature_range=(-1, 1))
     sequence = np.array(sequence).reshape(-1, 1)
     sequence = scaler.fit_transform(sequence)
-    x = [i for i in range(len(sequence))]
 
-    sequence = shorten_sequence([i[0] for i in sequence])
-    
+    sequence = ([i[0] for i in sequence])
 
     return(sequence)
-    # plt.plot(x, sequence)
-    # plt.show()
 
-def fft(sequence):
+def fft(sequence, term):
 
     # plt.figure()
 
     n = [i for i in range(len(sequence))]
 
     rft = np.fft.rfft(sequence)
-    rft[5:] = 0
+    rft[term:] = 0
     y_smooth = np.fft.irfft(rft)
     x = [i for i in range(len(y_smooth))]
 
@@ -180,12 +171,15 @@ def process_text(df):
     grouped = df_temp.groupby(by='id')
     df = df.set_index('id')
     df['sentences'] = 0
+    df['sl'] = 0
     df['words'] = 0
 
 
     ids = []
     sequences = []
     ratings = []
+    sl = []
+    genres = []
 
     for name, dfg in tqdm(grouped):
         dfg = dfg[dfg['yhat'] == 1]
@@ -212,23 +206,30 @@ def process_text(df):
             windows.append(window)
 
 
-        
+
 
         if len(sentences) > 1:
+            
+            s1 = sentiment(sentences)
+            # dump(s1, os.getcwd() + '/lib/sequence_raw_32651.arr')
+            # for i in [2, 3, 4, 5, 6]:
+            #     s2 = fft(s1, i)
+            s2 = fft(s1, 4)
+            # dump(s2, os.getcwd() + '/lib/sequence_fft_32651.arr')
+        
+            s3 = standardize_sequence(s2)
+            # dump(s3, os.getcwd() + '/lib/sequence_fft_standardized_32651.arr')
 
-            s = sentiment(sentences)
-            # dump(s, os.getcwd() + '/lib/sequence_raw.arr')
+            s4 = scale_sequence(s3)
+            #dump(s4, os.getcwd() + '/lib/sequence_fft_scaled_32651.arr')
+            #dump(s4, os.getcwd() + '/lib/sequence_fft_4920_term_{}.arr'.format(i))
+            
             # break
-            s = fft(s)
-            # dump(s, os.getcwd() + '/lib/sequence_fft.arr')
-            # break
-            s = scale_sequence(s)
-            dump(s, os.getcwd() + '/lib/sequence_fft_2.arr')
-            break
+            # pp_plot(s1, s2, s3, s4)
 
-            sequences.append(s)
+            sequences.append(s4)
             rating = df['rating'][name]
-            print(rating, name)
+            # print(rating, name)
 
             try:
                 assert isinstance(rating, float)
@@ -238,29 +239,74 @@ def process_text(df):
                 assert(isinstance(rating.values[0], float))
                 ratings.append(rating.values[0])
 
+            sl.append(len(sentences))
             ids.append(int(name))
+            genres.append(df['genre'][int(name)])
 
 
     res = pd.DataFrame()
     res['id'] = ids
     res['sentiment'] = sequences
     res['rating'] = ratings
+    res['sl'] = sl
+    res['genre'] = genres
 
     return(res)
 
 
+def pp_plot(s1, s2, s3, s4):
+
+    fig, (ax1, ax2, ax3, ax4) = plt.subplots(4, 1, figsize=(6.4, 18))
+
+    x = [i for i in range(len(s1))]
+    ax1.plot(x, s1)
+    ax1.set_title('Sentiment Scores (Raw)')
+    ax1.set_ylabel('Compound Score')
+    ax1.set_xlabel('Sentence')
+    ax1.grid()
+
+    x = [i for i in range(len(s2))]
+    ax2.plot(x, s2)
+    ax2.set_title('Sentiment Scores (FFT)')
+    ax2.set_ylabel('Compound Score')
+    ax2.set_xlabel('Sentence')
+    ax2.grid()
 
 
+    x = [i for i in range(len(s3))]
+
+
+    ax3.plot(x, s3)
+    ax3.set_title('Sentiment Scores (standardized)')
+    ax3.set_ylabel('Compound Score')
+    ax3.set_xlabel('Narrative time')
+    ax3.grid()
+
+    ax4.plot(x, s4)
+    ax4.set_title('Sentiment Scores (scaled)')
+    ax4.set_ylabel('Compound Score (scaled)')
+    ax4.set_xlabel('Narrative time')
+    ax4.grid()
+
+    fig.tight_layout(pad=3.5)
+    #fig.suptitle('Sentiment Vector')
+    plt.savefig(os.getcwd() + '/fig/pp_plot.png')
+
+    plt.show()
 
 
 
 
 def main():
-    df = pd.read_csv(os.getcwd() + '/data/pg_ratings.csv')[0:50]
+    df = pd.read_csv(os.getcwd() + '/data/pg_ratings.csv')[0:100].reset_index(drop=True)
+    # df = df[df['id'] == 4920].reset_index(drop=True)
     df = extract_metadata(df)
     df = filter_df(df)
 
     res = process_text(df)
+    print(res['sl'].mean())
+    print(res.groupby(by='genre').mean())
+
     res.to_csv(os.getcwd() + '/data/pg_clean.csv')
 
 

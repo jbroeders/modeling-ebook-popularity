@@ -71,7 +71,7 @@ def raw_sequence(y):
     
 
     plt.xlabel('Sentence')
-    plt.ylabel('Compound Score')
+    plt.ylabel('Sentiment')
     # plt.title(df['title'][idx] + ' by ' + df['author'][idx])
     plt.title('Raw values')
     # plt.legend(loc='best')
@@ -87,7 +87,7 @@ def fft_transform(y, term):
     
 
     plt.xlabel('Sentence')
-    plt.ylabel('Compound Score')
+    plt.ylabel('Sentiment')
     # plt.title(df['title'][idx] + ' by ' + df['author'][idx])
     plt.title('FFT')
     # plt.legend(loc='best')
@@ -103,8 +103,8 @@ def fft_scaled(y):
         
     
 
-    plt.xlabel('Narrative time')
-    plt.ylabel('Compound Score')
+    plt.xlabel('standardized narrative time')
+    plt.ylabel('Sentiment')
     # plt.title(df['title'][idx] + ' by ' + df['author'][idx])
     plt.title('Scaled and Standardized')
     # plt.legend(loc='best')
@@ -112,81 +112,124 @@ def fft_scaled(y):
     plt.show()
 
 
-def pp_plot(s1, s2, s3):
+def pp_plot(s1, s2, s3, s4, s5, s6, s7, s8):
 
-    fig, (ax1, ax2, ax3) = plt.subplots(3, 1)
 
-    x = [i for i in range(len(s1))]
-    ax1.plot(x, s1)
+    fig, (ax1, ax2, ax3, ax4) = plt.subplots(4, 1, figsize=(4.5, 12))
+
+    x1 = [i for i in range(len(s1))]
+    x2 = [i for i in range(len(s5))]
+    ax1.plot(x1, s1, label='Adaptation by M. Reynolds')
+    ax1.plot(x2, s5, label='Adolescents Only by I.E. Cox')
     ax1.set_title('Sentiment Scores (Raw)')
-    ax1.set_ylabel('Compound Score')
+    ax1.set_ylabel('Sentiment')
     ax1.set_xlabel('Sentence')
+    ax1.legend(loc='lower center', bbox_to_anchor=(0.5, 1.25),
+          fancybox=True, shadow=True)
     ax1.grid()
 
-    x = [i for i in range(len(s2))]
-    ax2.plot(x, s2)
+    x1 = [i for i in range(len(s2))]
+    x2 = [i for i in range(len(s6))]
+    ax2.plot(x1, s2)
+    ax2.plot(x2, s6)
     ax2.set_title('Sentiment Scores (FFT)')
-    ax2.set_ylabel('Compound Score')
+    ax2.set_ylabel('Sentiment')
     ax2.set_xlabel('Sentence')
     ax2.grid()
 
+
     x = [i for i in range(len(s3))]
+   
     ax3.plot(x, s3)
-    ax3.set_title('Sentiment Scores (scaled/standardized)')
-    ax3.set_ylabel('Compound Score')
-    ax3.set_xlabel('Narrative time')
+    ax3.plot(x, s7)
+    ax3.set_title('Sentiment Scores (standardized)')
+    ax3.set_ylabel('Sentiment')
+    ax3.set_xlabel('standardized narrative time')
     ax3.grid()
 
-    fig.tight_layout(pad=1.5)
-    #fig.suptitle('Sentiment Vector')
+    ax4.plot(x, s4)
+    ax4.plot(x, s8)
+    ax4.set_title('Sentiment Scores (scaled)')
+    ax4.set_ylabel('Sentiment (scaled)')
+    ax4.set_xlabel('standardized narrative time')
+    ax4.grid()
+
+    fig.tight_layout(h_pad=10)
     plt.savefig(os.getcwd() + '/fig/pp_plot.png')
 
     plt.show()
+    # fig.savefig(os.getcwd() + '/fig/pp_plot_final.png')
 
-    fig.savefig(os.getcwd() + '/fig/pp_plot.png')
+def fft_terms(s1, s2, s3, s4, s5, s6, s7, s8, s9, s10):
 
-def fft_terms(s1, s2, s3, s4):
-
-    fig, (ax1, ax2, ax3, ax4) = plt.subplots(4, 1)
+    fig, (ax1, ax2, ax3, ax4, ax5) = plt.subplots(5, 1, figsize=(6.4, 12))
 
     x = [i for i in range(len(s1))]
     
-    ax1.plot(x, s1)
+    ax1.plot(x, s1, label='The Blind Spot by H.E. Flint')
+    ax1.plot(x, s6, label='The Aliens by M. Leinster')
     ax1.set_title('FFT: 2nd order')
-    ax1.set_ylabel('Compound Score')
-    ax1.set_xlabel('Narrative Time')
+    ax1.set_ylabel('Sentiment')
+    ax1.set_xlabel('standardized narrative time')
+    ax1.legend(loc='lower center', bbox_to_anchor=(0.5, 1.25),
+          fancybox=True, shadow=True)
+    ax1.grid()
 
     ax2.plot(x, s2)
+    ax2.plot(x, s7)
     ax2.set_title('FFT: 3rd order')
-    ax2.set_ylabel('Compound Score')
-    ax2.set_xlabel('Narrative Time')
+    ax2.set_ylabel('Sentiment')
+    ax2.set_xlabel('standardized narrative time')
+    ax2.grid()
 
     ax3.plot(x, s3)
+    ax3.plot(x, s8)
     ax3.set_title('FFT: 4th order')
-    ax3.set_ylabel('Compound Score')
-    ax3.set_xlabel('Narrative Time')
+    ax3.set_ylabel('Sentiment')
+    ax3.set_xlabel('standardized narrative time')
+    ax3.grid()
 
     ax4.plot(x, s4)
+    ax4.plot(x, s9)
     ax4.set_title('FFT: 5th order')
-    ax4.set_ylabel('Compound Score')
-    ax4.set_xlabel('Narrative Time')
+    ax4.set_ylabel('Sentiment')
+    ax4.set_xlabel('standardized narrative time')
+    ax4.grid()
 
-    fig.tight_layout(pad=1.5)
+    ax5.plot(x, s5)
+    ax5.plot(x, s10)
+    ax5.set_title('FFT: 5th order')
+    ax5.set_ylabel('Sentiment')
+    ax5.set_xlabel('standardized narrative time')
+    ax5.grid()
+
+    fig.tight_layout(h_pad=4)
     plt.show()
 
     fig.savefig(os.getcwd() + '/fig/fft_plot.png')
 
 if __name__ == '__main__':
 
-    s1 = joblib.load(os.getcwd() + '/lib/sequence_raw.arr')
-    s2 = joblib.load(os.getcwd() + '/lib/sequence_fft.arr')
-    s3 = joblib.load(os.getcwd() + '/lib/sequence_fft_scaled.arr')
+    s1 = joblib.load(os.getcwd() + '/lib/sequence_raw_24749.arr')
+    s2 = joblib.load(os.getcwd() + '/lib/sequence_fft_24749.arr')
+    s3 = joblib.load(os.getcwd() + '/lib/sequence_fft_standardized_24749.arr')
+    s4 = joblib.load(os.getcwd() + '/lib/sequence_fft_scaled_24749.arr')
+    s5 = joblib.load(os.getcwd() + '/lib/sequence_raw_32651.arr')
+    s6 = joblib.load(os.getcwd() + '/lib/sequence_fft_32651.arr')
+    s7 = joblib.load(os.getcwd() + '/lib/sequence_fft_standardized_32651.arr')
+    s8 = joblib.load(os.getcwd() + '/lib/sequence_fft_scaled_32651.arr')
 
-    pp_plot(s1, s2, s3)
+    #pp_plot(s1, s2, s3, s4, s5, s6, s7, s8)
 
-    s1 = joblib.load(os.getcwd() + '/lib/sequence_fft_2.arr')
-    s2 = joblib.load(os.getcwd() + '/lib/sequence_fft_3.arr')
-    s3 = joblib.load(os.getcwd() + '/lib/sequence_fft_4.arr')
-    s4 = joblib.load(os.getcwd() + '/lib/sequence_fft_5.arr')
+    s1 = joblib.load(os.getcwd() + '/lib/sequence_fft_4920_term_2.arr')
+    s2 = joblib.load(os.getcwd() + '/lib/sequence_fft_4920_term_3.arr')
+    s3 = joblib.load(os.getcwd() + '/lib/sequence_fft_4920_term_4.arr')
+    s4 = joblib.load(os.getcwd() + '/lib/sequence_fft_4920_term_5.arr')
+    s5 = joblib.load(os.getcwd() + '/lib/sequence_fft_4920_term_6.arr')
+    s6 = joblib.load(os.getcwd() + '/lib/sequence_fft_24104_term_2.arr')
+    s7 = joblib.load(os.getcwd() + '/lib/sequence_fft_24104_term_3.arr')
+    s8 = joblib.load(os.getcwd() + '/lib/sequence_fft_24104_term_4.arr')
+    s9 = joblib.load(os.getcwd() + '/lib/sequence_fft_24104_term_5.arr')
+    s10 = joblib.load(os.getcwd() + '/lib/sequence_fft_24104_term_6.arr')
 
-    fft_terms(s1, s2, s3, s4)
+    fft_terms(s1, s2, s3, s4, s5, s6, s7, s8, s9, s10)

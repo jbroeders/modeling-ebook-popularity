@@ -55,4 +55,9 @@ yhat = rf.predict(X_test)
 print(classification_report(y_test, yhat))
 print(confusion_matrix(y_test, yhat))
 
+from sklearn.metrics import plot_confusion_matrix
+import matplotlib.pyplot as plt
+plot_confusion_matrix(rf, X_test, y_test, cmap=Noner)
+plt.show()
+
 
