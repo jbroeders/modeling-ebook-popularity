@@ -229,19 +229,21 @@ def process_text(df):
 
             sequences.append(s4)
             rating = df['rating'][name]
+            genre = df['genre'][name]
             # print(rating, name)
 
             try:
                 assert isinstance(rating, float)
                 ratings.append(rating)
-
+                genres.append(genre)
             except:
                 assert(isinstance(rating.values[0], float))
                 ratings.append(rating.values[0])
+                genres.append(genre.values[0])
 
             sl.append(len(sentences))
             ids.append(int(name))
-            genres.append(df['genre'][int(name)])
+            
 
 
     res = pd.DataFrame()
@@ -298,16 +300,17 @@ def pp_plot(s1, s2, s3, s4):
 
 
 def main():
-    df = pd.read_csv(os.getcwd() + '/data/pg_ratings.csv')[0:100].reset_index(drop=True)
+    df = pd.read_csv(os.getcwd() + '/data/pg_ratings.csv').reset_index(drop=True)
     # df = df[df['id'] == 4920].reset_index(drop=True)
     df = extract_metadata(df)
     df = filter_df(df)
 
     res = process_text(df)
+    res.to_csv(os.getcwd() + '/data/pg_clean.csv')
     print(res['sl'].mean())
     print(res.groupby(by='genre').mean())
 
-    res.to_csv(os.getcwd() + '/data/pg_clean.csv')
+    
 
 
 
