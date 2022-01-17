@@ -24,6 +24,7 @@ def extract_metadata(df):
     titles = []
     authors = []
     langs = []
+    dates = []
 
     for i in tqdm(range(len(df)), desc='Extracting metadata'):
         filename = df['filename'][i]
@@ -33,6 +34,12 @@ def extract_metadata(df):
         author = book.get_metadata('DC', 'creator')
         title = book.get_metadata('DC', 'title')
         lang = book.get_metadata('DC', 'language')
+        date = book.get_metadata('DC', 'date')
+
+        # desc = book.get_metadata('DC', 'description')
+        # print(desc)
+
+
 
         if author and title:
             authors.append(author[0][0])
@@ -42,11 +49,18 @@ def extract_metadata(df):
             authors.append('')
             titles.append('')
 
+        if date:
+            dates.append(date[0][0])
+
+        else:
+            dates.append['']
+
         langs.append(lang[0][0])
 
     df['author'] = authors
     df['title'] = titles
     df['lang'] = langs
+    df['date'] = dates
 
     df = df[df['lang'] == 'en'].reset_index(drop=True)
 
@@ -180,6 +194,9 @@ def process_text(df):
     ratings = []
     sl = []
     genres = []
+    dates = []
+    titles = []
+    sentiment_means = []
 
     for name, dfg in tqdm(grouped):
         dfg = dfg[dfg['yhat'] == 1]
@@ -230,20 +247,27 @@ def process_text(df):
             sequences.append(s4)
             rating = df['rating'][name]
             genre = df['genre'][name]
-            # print(rating, name)
-
+            title = df['title'][name]
+            date = df['date'][name]
+            sm = np.mean(s4)
+           
             try:
                 assert isinstance(rating, float)
                 ratings.append(rating)
                 genres.append(genre)
+                titles.append(title)
+                dates.append(date)
+
             except:
                 assert(isinstance(rating.values[0], float))
                 ratings.append(rating.values[0])
                 genres.append(genre.values[0])
+                titles.append(title.values[0])
+                dates.append(date.values[0])
 
             sl.append(len(sentences))
             ids.append(int(name))
-            
+            sentiment_means.append(sm)
 
 
     res = pd.DataFrame()
@@ -252,7 +276,9 @@ def process_text(df):
     res['rating'] = ratings
     res['sl'] = sl
     res['genre'] = genres
-
+    res['title'] = titles
+    res['date'] = dates
+    res['sent_mean'] = sentiment_means
     return(res)
 
 
@@ -300,15 +326,16 @@ def pp_plot(s1, s2, s3, s4):
 
 
 def main():
-    df = pd.read_csv(os.getcwd() + '/data/pg_ratings.csv').reset_index(drop=True)
+    df = pd.read_csv(os.getcwd() + '/data/pg_ratings.csv').reset_index(drop=True)[0:50]
     # df = df[df['id'] == 4920].reset_index(drop=True)
     df = extract_metadata(df)
     df = filter_df(df)
 
     res = process_text(df)
     res.to_csv(os.getcwd() + '/data/pg_clean.csv')
-    print(res['sl'].mean())
-    print(res.groupby(by='genre').mean())
+    print(res.head())
+
+
 
     
 

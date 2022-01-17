@@ -7,7 +7,7 @@ from bs4 import BeautifulSoup
 from sklearn.feature_extraction.text import TfidfVectorizer
 
 from textblob import TextBlob
-
+from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
 
 import ebooklib
 from ebooklib import epub
@@ -30,6 +30,12 @@ def extract_metadata(df):
         author = book.get_metadata('DC', 'creator')
         title = book.get_metadata('DC', 'title')
         lang = book.get_metadata('DC', 'language')
+
+        try:
+            print(book.get_metadata('DC', 'date')[0][0])
+
+        except:
+            print('no date')
 
         if author and title:
             authors.append(author[0][0])
@@ -138,12 +144,30 @@ def nrc(df):
 
     return(df)
 
+
+def sentiment(df):
+    scores = []
+    analyzer = SentimentIntensityAnalyzer()
+    
+    for idx in tqdm(range(len(df['corpus'])), desc='Adding Sentiment'):
+        text = df['corpus'][idx]
+        scores.append(analyzer.polarity_scores(text)['compound'])
+        # df['sentiment'][idx] = analyzer.polarity_scores(text)['compound']
+
+    df['sentiment'] = scores
+
+
+    return(df)
+
 def main():
-    df = pd.read_csv(os.getcwd() + '/data/pg_ratings.csv')[0:125]
+    df = pd.read_csv(os.getcwd() + '/data/pg_ratings.csv')[0:10]
     df = extract_metadata(df)
     df = filter_df(df)
     df = extract_text(df)
     df = nrc(df)
+    df = sentiment(df)
+
+    print(df.head())
    
 
 if __name__ == '__main__':
