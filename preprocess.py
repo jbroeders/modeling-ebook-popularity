@@ -196,7 +196,17 @@ def process_text(df):
     genres = []
     dates = []
     titles = []
-    sentiment_means = []
+
+    nrc_fears = []
+    nrc_angers = []
+    nrc_trusts = []
+    nrc_surprises = []
+    nrc_positives = []
+    nrc_negatives = []
+    nrc_sadnesss = []
+    nrc_disgusts = []
+    nrc_joys = []
+
 
     for name, dfg in tqdm(grouped):
         dfg = dfg[dfg['yhat'] == 1]
@@ -204,26 +214,6 @@ def process_text(df):
 
         sentences = TextBlob(book_corpus).sentences
         words = TextBlob(book_corpus).words
-
-        windows = []
-
-        for i in range(len(words)):
-
-            window = []
-
-            if i < 3:
-                window.append(words[0:i+4])
-
-            elif i > len(words) - 3:
-                window.append(words[i-3:i+1])
-
-            else:
-                window.append(words[i-3:i+4])
-
-            windows.append(window)
-
-
-
 
         if len(sentences) > 1:
             
@@ -249,7 +239,6 @@ def process_text(df):
             genre = df['genre'][name]
             title = df['title'][name]
             date = df['date'][name]
-            sm = np.mean(s4)
            
             try:
                 assert isinstance(rating, float)
@@ -267,18 +256,109 @@ def process_text(df):
 
             sl.append(len(sentences))
             ids.append(int(name))
-            sentiment_means.append(sm)
+
+
+
+            nrc_fear = []
+            nrc_anger = []
+            nrc_trust = []
+            nrc_surprise = []
+            nrc_positive = []
+            nrc_negative = []
+            nrc_sadness = []
+            nrc_disgust = []
+            nrc_joy = []
+
+            for sentence in sentences:
+
+                sentence = str(sentence)
+
+                # print('\t' + str(sentence))
+                # print(str(sentence))
+                nrc = NRCLex(sentence).affect_frequencies
+                
+                nrc_fear.append(nrc['fear'])
+                nrc_anger.append(nrc['anger'])
+                nrc_trust.append(nrc['trust'])
+                nrc_surprise.append(nrc['surprise'])
+                nrc_positive.append(nrc['positive'])
+                nrc_negative.append(nrc['negative'])
+                nrc_sadness.append(nrc['sadness'])
+                nrc_disgust.append(nrc['disgust'])
+                nrc_joy.append(nrc['joy'])
+
+
+            nrc_fear = fft(nrc_fear, 4)
+            nrc_fear = standardize_sequence(nrc_fear)
+            nrc_fear = scale_sequence(nrc_fear)
+
+            nrc_anger = fft(nrc_anger, 4)
+            nrc_anger = standardize_sequence(nrc_anger)
+            nrc_anger = scale_sequence(nrc_anger)
+
+            nrc_trust = fft(nrc_trust, 4)
+            nrc_trust = standardize_sequence(nrc_trust)
+            nrc_trust = scale_sequence(nrc_trust)
+
+            nrc_surprise = fft(nrc_surprise, 4)
+            nrc_surprise = standardize_sequence(nrc_surprise)
+            nrc_surprise = scale_sequence(nrc_surprise)
+
+            nrc_positive = fft(nrc_positive, 4)
+            nrc_positive = standardize_sequence(nrc_positive)
+            nrc_positive = scale_sequence(nrc_positive)
+
+            nrc_negative = fft(nrc_negative, 4)
+            nrc_negative = standardize_sequence(nrc_negative)
+            nrc_negative = scale_sequence(nrc_negative)
+
+            nrc_sadness = fft(nrc_sadness, 4)
+            nrc_sadness = standardize_sequence(nrc_sadness)
+            nrc_sadness = scale_sequence(nrc_sadness)
+
+            nrc_disgust = fft(nrc_disgust, 4)
+            nrc_disgust = standardize_sequence(nrc_disgust)
+            nrc_disgust = scale_sequence(nrc_disgust)
+
+            nrc_joy = fft(nrc_fear, 4)
+            nrc_joy = standardize_sequence(nrc_joy)
+            nrc_joy = scale_sequence(nrc_joy)
+
+            nrc_fears.append(nrc_fear)
+            nrc_angers.append(nrc_anger)
+            nrc_trusts.append(nrc_trust)
+            nrc_surprises.append(nrc_surprise)
+            nrc_positives.append(nrc_positive)
+            nrc_negatives.append(nrc_negative)
+            nrc_sadnesss.append(nrc_sadness)
+            nrc_disgusts.append(nrc_disgust)
+            nrc_joys.append(nrc_joy)
+
+            
 
 
     res = pd.DataFrame()
     res['id'] = ids
     res['sentiment'] = sequences
-    res['rating'] = ratings
+    
     res['sl'] = sl
     res['genre'] = genres
     res['title'] = titles
     res['date'] = dates
-    res['sent_mean'] = sentiment_means
+
+    res['nrc_fear'] = nrc_fears
+    res['nrc_anger'] = nrc_angers
+    res['nrc_trust'] = nrc_trusts
+    res['nrc_surprise'] = nrc_surprises
+    res['nrc_positive'] = nrc_positives
+    res['nrc_negative'] = nrc_negatives
+    res['nrc_sadness'] = nrc_sadnesss
+    res['nrc_disgust'] = nrc_disgusts
+    res['nrc_joy'] = nrc_joys
+    
+    res['rating'] = ratings
+
+
     return(res)
 
 
@@ -326,7 +406,7 @@ def pp_plot(s1, s2, s3, s4):
 
 
 def main():
-    df = pd.read_csv(os.getcwd() + '/data/pg_ratings.csv').reset_index(drop=True)[0:50]
+    df = pd.read_csv(os.getcwd() + '/data/pg_ratings.csv').reset_index(drop=True)
     # df = df[df['id'] == 4920].reset_index(drop=True)
     df = extract_metadata(df)
     df = filter_df(df)
