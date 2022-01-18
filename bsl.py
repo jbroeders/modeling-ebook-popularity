@@ -10,6 +10,8 @@ from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import mean_absolute_error, mean_squared_error
 from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.preprocessing import MinMaxScaler
+
 
 from tqdm import tqdm
 
@@ -41,7 +43,13 @@ if __name__=='__main__':
             df[mcol][idx] = np.mean(ast.literal_eval(df[mcol][idx]))
 
     X = df.drop(labels=['Unnamed: 0', 'genre', 'rating', 'id', 'title'], axis=1)
-    X = pd.concat([X, genre_dummies], axis=1)
+    # X = pd.concat([X, genre_dummies], axis=1)
+
+
+    print(X)
+
+    scaler = MinMaxScaler()
+    X =  scaler.fit_transform(X)
 
     feature_names = [f"feature {i}" for i in range(X.shape[1])]
 
@@ -49,7 +57,9 @@ if __name__=='__main__':
     # print(y[0:5])
 
 
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25)
+    # X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25)
+    X_train, X_test = X[:int(0.75*len(X))], X[int(0.75*len(X)):]
+    y_train, y_test = y[:int(0.75*len(y))], y[int(0.75*len(y)):]
 
     rf = RandomForestRegressor()
     rf.fit(X_train, y_train)
@@ -86,6 +96,8 @@ if __name__=='__main__':
     plt.title('Prediction, MAE: {}'.format(mean_absolute_error(y_test, yhat)))
     plt.legend()
     plt.show()
+
+    plt.figure()
 
     diff = abs(yhat - y_test)
     plt.figure()
