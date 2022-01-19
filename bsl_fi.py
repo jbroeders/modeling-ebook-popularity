@@ -57,9 +57,9 @@ if __name__=='__main__':
     # print(y[0:5])
 
 
-    # X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25)
-    # X_train, X_test = X[:int(0.75*len(X))], X[int(0.75*len(X)):]
-    # y_train, y_test = y[:int(0.75*len(y))], y[int(0.75*len(y)):]
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25)
+    X_train, X_test = X[:int(0.75*len(X))], X[int(0.75*len(X)):]
+    y_train, y_test = y[:int(0.75*len(y))], y[int(0.75*len(y)):]
 
     from sklearn.model_selection import cross_val_score
     rf = RandomForestRegressor()
@@ -70,10 +70,8 @@ if __name__=='__main__':
     scores = cross_val_score(rf, X, y, cv=5, scoring='neg_root_mean_squared_error')
     print(np.mean(scores))
 
-    yhat = rf.predict(X_test)
+    
 
-    print(mean_squared_error(y_test, yhat, squared=False))
-    print(mean_absolute_error(y_test, yhat))
 
     importances = rf.feature_importances_
     std = np.std([tree.feature_importances_ for tree in rf.estimators_], axis=0)
@@ -92,7 +90,11 @@ if __name__=='__main__':
     fig.tight_layout()
     plt.show()
 
+    yhat = rf.predict(X_test)
 
+
+    print(mean_squared_error(y_test, yhat, squared=False))
+    print(mean_absolute_error(y_test, yhat))    
 
     x = [i for i in range(len(yhat))]
     plt.figure()
