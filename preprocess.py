@@ -221,7 +221,7 @@ def process_text(df):
             # dump(s1, os.getcwd() + '/lib/sequence_raw_32651.arr')
             # for i in [2, 3, 4, 5, 6]:
             #     s2 = fft(s1, i)
-            s2 = fft(s1, 4)
+            s2 = fft(s1, 2)
             # dump(s2, os.getcwd() + '/lib/sequence_fft_32651.arr')
         
             s3 = standardize_sequence(s2)
@@ -288,39 +288,39 @@ def process_text(df):
                 nrc_joy.append(nrc['joy'])
 
 
-            nrc_fear = fft(nrc_fear, 4)
+            nrc_fear = fft(nrc_fear, 2)
             nrc_fear = standardize_sequence(nrc_fear)
             nrc_fear = scale_sequence(nrc_fear)
 
-            nrc_anger = fft(nrc_anger, 4)
+            nrc_anger = fft(nrc_anger, 2)
             nrc_anger = standardize_sequence(nrc_anger)
             nrc_anger = scale_sequence(nrc_anger)
 
-            nrc_trust = fft(nrc_trust, 4)
+            nrc_trust = fft(nrc_trust, 2)
             nrc_trust = standardize_sequence(nrc_trust)
             nrc_trust = scale_sequence(nrc_trust)
 
-            nrc_surprise = fft(nrc_surprise, 4)
+            nrc_surprise = fft(nrc_surprise, 2)
             nrc_surprise = standardize_sequence(nrc_surprise)
             nrc_surprise = scale_sequence(nrc_surprise)
 
-            nrc_positive = fft(nrc_positive, 4)
+            nrc_positive = fft(nrc_positive, 2)
             nrc_positive = standardize_sequence(nrc_positive)
             nrc_positive = scale_sequence(nrc_positive)
 
-            nrc_negative = fft(nrc_negative, 4)
+            nrc_negative = fft(nrc_negative, 2)
             nrc_negative = standardize_sequence(nrc_negative)
             nrc_negative = scale_sequence(nrc_negative)
 
-            nrc_sadness = fft(nrc_sadness, 4)
+            nrc_sadness = fft(nrc_sadness, 2)
             nrc_sadness = standardize_sequence(nrc_sadness)
             nrc_sadness = scale_sequence(nrc_sadness)
 
-            nrc_disgust = fft(nrc_disgust, 4)
+            nrc_disgust = fft(nrc_disgust, 2)
             nrc_disgust = standardize_sequence(nrc_disgust)
             nrc_disgust = scale_sequence(nrc_disgust)
 
-            nrc_joy = fft(nrc_fear, 4)
+            nrc_joy = fft(nrc_fear, 2)
             nrc_joy = standardize_sequence(nrc_joy)
             nrc_joy = scale_sequence(nrc_joy)
 
@@ -412,7 +412,7 @@ def main():
     df = filter_df(df)
 
     res = process_text(df)
-    res.to_csv(os.getcwd() + '/data/pg_clean.csv')
+    res.to_csv(os.getcwd() + '/data/fft_2.csv')
     print(res.head())
 
 

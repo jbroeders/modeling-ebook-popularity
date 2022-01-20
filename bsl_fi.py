@@ -51,63 +51,71 @@ if __name__=='__main__':
     scaler = MinMaxScaler()
     X =  scaler.fit_transform(X)
 
+   
+
     feature_names = [f"feature {i}" for i in range(X.shape[1])]
 
     # print(X.head())
     # print(y[0:5])
 
+    X = np.zeros(len(y)).reshape(-1, 1)
 
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25)
     X_train, X_test = X[:int(0.75*len(X))], X[int(0.75*len(X)):]
     y_train, y_test = y[:int(0.75*len(y))], y[int(0.75*len(y)):]
 
     from sklearn.model_selection import cross_val_score
+    from sklearn.model_selection import KFold
+    kf = KFold(n_splits=5, shuffle=True, random_state=7)
+
+
     rf = RandomForestRegressor()
+    scores = cross_val_score(rf, X, y, cv=kf, scoring='neg_mean_absolute_error')
+    print(scores)
+    print(np.mean(scores)*-1)
 
-    scores = cross_val_score(rf, X, y, cv=5, scoring='neg_mean_absolute_error')
-    print(np.mean(scores))
-
-    scores = cross_val_score(rf, X, y, cv=5, scoring='neg_root_mean_squared_error')
-    print(np.mean(scores))
+    scores = cross_val_score(rf, X, y, cv=kf, scoring='neg_root_mean_squared_error')
+    print(scores)
+    print(np.mean(scores)*-1)
 
     
 
 
-    importances = rf.feature_importances_
-    std = np.std([tree.feature_importances_ for tree in rf.estimators_], axis=0)
+    # importances = rf.feature_importances_
+    # std = np.std([tree.feature_importances_ for tree in rf.estimators_], axis=0)
 
-    from sklearn.inspection import permutation_importance
+    # from sklearn.inspection import permutation_importance
 
-    result = permutation_importance(
-    rf, X_test, y_test, n_repeats=10, random_state=42, n_jobs=2)
+    # result = permutation_importance(
+    # rf, X_test, y_test, n_repeats=10, random_state=42, n_jobs=2)
 
-    forest_importances = pd.Series(result.importances_mean, index=feature_names)
+    # forest_importances = pd.Series(result.importances_mean, index=feature_names)
 
-    fig, ax = plt.subplots()
-    forest_importances.plot.bar(yerr=result.importances_std, ax=ax)
-    ax.set_title("Feature importances using permutation on full model")
-    ax.set_ylabel("Mean accuracy decrease")
-    fig.tight_layout()
-    plt.show()
+    # fig, ax = plt.subplots()
+    # forest_importances.plot.bar(yerr=result.importances_std, ax=ax)
+    # ax.set_title("Feature importances using permutation on full model")
+    # ax.set_ylabel("Mean accuracy decrease")
+    # fig.tight_layout()
+    # plt.show()
 
-    yhat = rf.predict(X_test)
+    # yhat = rf.predict(X_test)
 
 
-    print(mean_squared_error(y_test, yhat, squared=False))
-    print(mean_absolute_error(y_test, yhat))    
+    # print(mean_squared_error(y_test, yhat, squared=False))
+    # print(mean_absolute_error(y_test, yhat))    
 
-    x = [i for i in range(len(yhat))]
-    plt.figure()
-    plt.plot(x, y_test, color = 'red', linestyle='--', marker='o', label = 'Real data')
-    plt.plot(x, yhat, color = 'blue', linestyle='--', marker='o', label = 'Predicted data')
-    plt.title('Prediction, MAE: {}'.format(mean_absolute_error(y_test, yhat)))
-    plt.legend()
-    plt.show()
+    # x = [i for i in range(len(yhat))]
+    # plt.figure()
+    # plt.plot(x, y_test, color = 'red', linestyle='--', marker='o', label = 'Real data')
+    # plt.plot(x, yhat, color = 'blue', linestyle='--', marker='o', label = 'Predicted data')
+    # plt.title('Prediction, MAE: {}'.format(mean_absolute_error(y_test, yhat)))
+    # plt.legend()
+    # plt.show()
 
-    plt.figure()
+    # plt.figure()
 
-    diff = abs(yhat - y_test)
-    plt.figure()
-    plt.plot(x, diff)
-    plt.title('Prediction, Differences')
-    plt.show()
+    # diff = abs(yhat - y_test)
+    # plt.figure()
+    # plt.plot(x, diff)
+    # plt.title('Prediction, Differences')
+    # plt.show()

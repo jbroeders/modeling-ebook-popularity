@@ -32,13 +32,13 @@ def build_model():
 
 
     model = Model(inputs=[nlp_input , meta_input], outputs=x)
-    model.compile(optimizer='adam', loss='mae', metrics=['mae', 'mse'])
+    model.compile(optimizer='adam', loss='mae', metrics=['mae', tf.keras.metrics.RootMeanSquaredError()])
 
     return(model)
 
 if __name__ == '__main__':
 
-    df = pd.read_csv(os.getcwd() + '/data/pg_clean.csv')
+    df = pd.read_csv(os.getcwd() + '/data/pg_clean_10.csv')
     y = np.array(df['rating']).reshape(-1, 1)
 
     X_nlp = np.array([ast.literal_eval(i) for i in tqdm(df['sentiment'])])
@@ -75,9 +75,16 @@ if __name__ == '__main__':
 
     from sklearn.model_selection import KFold
 
-    kf = KFold(n_splits=10, shuffle=True, random_state=7)
+    kf = KFold(n_splits=5, shuffle=True, random_state=7)
+
+    c = 0
+    maes = []
+    rmses = []
+
+
 
     for train_index, val_index in kf.split(np.zeros(len(y)), y):
+        
         X_meta_train = X_meta[train_index]
         X_nlp_train = X_nlp[train_index]
         X_nlp_train = np.resize(X_nlp_train, (X_nlp_train.shape[0], 1, X_nlp_train.shape[1]))
@@ -107,10 +114,38 @@ if __name__ == '__main__':
         # at the end of each epoch
         validation_data=({'nlp_input': X_nlp_val, 'meta_input': X_meta_val}, y_val),)
 
+        hist = history.history
+
+
+        plt.figure()
+        plt.plot(hist['mae'], '--', label='train_mae')
+        plt.plot(hist['root_mean_squared_error'], '--', label='train_rmse')
+        plt.plot(hist['val_mae'], label='val_mae')
+        plt.plot(hist['val_root_mean_squared_error'], label='val_rmse')
+        plt.ylim(0.2, 0.75)
+        plt.grid()
+        plt.legend()
+
+        plt.title('Learning rate')
+        plt.xlabel('Epoch')
+
+        plt.savefig(os.getcwd() + '/fig/rnn_meta_nlp_{}'.format(c))
+        # plt.show()
+
+        maes.append(hist['val_mae'][-1])
+        rmses.append(hist['val_root_mean_squared_error'][-1])
+
+        c += 1
+
+        # pd.DataFrame(history.history).plot(figsize=(8,5))
+        # plt.show()
 
     print('------------------------')
+    print(maes)
+    print(rmses)
 
-
+    print('MAE: {}'.format(np.mean(maes)))
+    print('RMSE: {}'.format(np.mean(rmses)))
 
 
   
